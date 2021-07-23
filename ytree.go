@@ -48,40 +48,22 @@ func readItem(itemPath string, item *Item) {
 	}
 }
 
-/*
-├── README.md
-├── go.mod
-├── testDir
-│   ├── a
-│   │   └── 1.txt
-│   └── b
-│       ├── 2.txt
-│       └── c
-│           └── 3.txt
-├── ytree.go
-└── ytree_test.go
-*/
+func printItem(item *Item, buffer *bytes.Buffer, levels []bool) {
 
-// TODO still have some bug, for parent |
-func printItem(item *Item, buffer *bytes.Buffer, level int, isLast bool, isRootLast bool) {
-	originalLevel := level
-	for level > 0 {
-		if level == originalLevel {
-			if isRootLast {
+	for index, level := range levels {
+		if index == len(levels)-1 {
+			if level {
+				buffer.WriteString("└── ")
+			} else {
+				buffer.WriteString("├── ")
+			}
+		} else {
+			if level {
 				buffer.WriteString("    ")
 			} else {
 				buffer.WriteString("│   ")
 			}
-		} else {
-			buffer.WriteString("    ")
 		}
-		level -= 1
-	}
-
-	if isLast {
-		buffer.WriteString("└── ")
-	} else {
-		buffer.WriteString("├── ")
 	}
 
 	buffer.WriteString(item.Name)
@@ -90,14 +72,14 @@ func printItem(item *Item, buffer *bytes.Buffer, level int, isLast bool, isRootL
 	length := len(item.Contents)
 	for index, childItem := range item.Contents {
 		if index == length-1 {
-			printItem(&childItem, buffer, originalLevel+1, true, isRootLast)
+			printItem(&childItem, buffer, append(levels, true))
 		} else {
-			printItem(&childItem, buffer, originalLevel+1, false, isRootLast)
+			printItem(&childItem, buffer, append(levels, false))
 		}
 	}
 }
 
-func outputItemToConsole(item *Item) {
+func outputItemToText(item *Item) []byte {
 	var buffer bytes.Buffer
 	buffer.WriteString(item.Name)
 	buffer.WriteString("\n")
@@ -105,27 +87,33 @@ func outputItemToConsole(item *Item) {
 	length := len(item.Contents)
 	for index, childItem := range item.Contents {
 		if index == length-1 {
-			printItem(&childItem, &buffer, 0, true, true)
+			printItem(&childItem, &buffer, []bool{true})
 		} else {
-			printItem(&childItem, &buffer, 0, false, false)
+			printItem(&childItem, &buffer, []bool{false})
 		}
 	}
-	fmt.Println(buffer.String())
+	return buffer.Bytes()
 }
 
-func outputItemToJSON(item *Item, outputPath string) {
+func outputItemToJSON(item *Item, outputPath string) ([]byte, error) {
 	output, err := json.MarshalIndent(item, "", "\t")
 	if err != nil {
 		log.Fatal(err)
+		return nil, err
 	}
-	err = ioutil.WriteFile(outputPath, output, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
+	return output, nil
 }
 
-func outputItemToXML(item *Item, outputPath string) {
+// func outputItemToXML(item *Item, outputPath string) {
 
+// }
+
+func writeFile(data []byte, filePath string) error {
+	err := ioutil.WriteFile(filePath, data, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -147,20 +135,30 @@ func main() {
 	readItem(*dir, item)
 
 	if *toJSON {
-		outputItemToJSON(item, *outputPath)
+		jsonBytes, err := outputItemToJSON(item, *outputPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = writeFile(jsonBytes, *outputPath)
+		if err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 
 	if *toXML {
-		outputItemToXML(item, *outputPath)
+		// outputItemToXML(item, *outputPath)
 		return
 	}
 
-	outputItemToConsole(item)
+	textbytes := outputItemToText(item)
+	if *outputPath != "" {
+		err = writeFile(textbytes, *outputPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
-	// output to txt file
-
-	// readDir(*dir)
-	// fmt.Println(*dir)
-	// printDir(*dir, 2)
+	fmt.Println(string(textbytes))
 }
