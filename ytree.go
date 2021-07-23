@@ -1,4 +1,4 @@
-package ytree
+package main
 
 import (
 	"flag"
@@ -25,8 +25,9 @@ func readDir(dir string) {
 }
 
 func printTab(tab int) {
+	fmt.Print("├")
 	for i := 0; i < tab; i++ {
-		fmt.Print(" ")
+		fmt.Print("─")
 	}
 }
 
@@ -39,11 +40,9 @@ func printDir(base string, tab int) {
 			printDir(path, tab+2)
 		}
 	}
-
 }
 
-func print() {
-
+func main() {
 	dir := flag.String("dir", "./", "directory to show")
 	flag.Parse()
 

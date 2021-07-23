@@ -1,4 +1,4 @@
-package ytree
+package main
 
 import (
 	"os"
@@ -7,6 +7,5 @@ import (
 
 func TestPrint(t *testing.T) {
 	os.Args = append(os.Args, "-dir=./testDir")
-
-	print()
+	main()
 }
