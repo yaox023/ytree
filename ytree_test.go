@@ -53,6 +53,10 @@ const standardJSON = `{
 	]
 }`
 
+func init() {
+	os.MkdirAll("./testResult", 0755)
+}
+
 func TestJSON(t *testing.T) {
 	outputPath := "./testResult/test_json_output.json"
 	// templatePath := "./testResult/test_json_template.json"
