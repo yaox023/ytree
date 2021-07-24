@@ -151,8 +151,6 @@ func main() {
 	outputPath := flags.String("output", "", "output path")
 	flags.Parse(os.Args[2:])
 
-	// 逻辑是都输出 std，指定文件才输出文件
-
 	dirInfo, err := os.Stat(*dir)
 	if err != nil {
 		log.Fatal(err)
@@ -166,38 +164,29 @@ func main() {
 	report := &Report{Files: 0, Directories: -1}
 	readItem(*dir, item, report)
 
+	var outputBytes []byte
+
 	if *toJSON {
-		jsonBytes, err := outputItemToJSON(item, *outputPath)
+		outputBytes, err = outputItemToJSON(item, *outputPath)
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = writeFile(jsonBytes, *outputPath)
+	} else if *toXML {
+		outputBytes, err = outputItemToXML(item, report, *outputPath)
 		if err != nil {
 			log.Fatal(err)
 		}
-		return
+	} else {
+		outputBytes = outputItemToText(item)
 	}
 
-	if *toXML {
-		xmlBytes, err := outputItemToXML(item, report, *outputPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = writeFile(xmlBytes, *outputPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return
-	}
-
-	textbytes := outputItemToText(item)
 	if *outputPath != "" {
-		err = writeFile(textbytes, *outputPath)
+		err = writeFile(outputBytes, *outputPath)
 		if err != nil {
 			log.Fatal(err)
 		}
 		return
+	} else {
+		fmt.Println(string(outputBytes))
 	}
-
-	fmt.Println(string(textbytes))
 }
