@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -74,14 +75,23 @@ const standardXML = `<?xml version="1.0" encoding="UTF-8"?>
 
 func init() {
 	os.MkdirAll("./testResult", 0755)
+
+	// delete test args
+	var newArgs []string
+	for _, arg := range os.Args {
+		if !strings.HasPrefix(arg, "-test.") {
+			newArgs = append(newArgs, arg)
+		}
+	}
+	os.Args = newArgs
 }
 
 func TestXML(t *testing.T) {
 	outputPath := "./testResult/test_xml_output.xml"
 
-	os.Args = append(os.Args, "-dir=./testDir")
-	os.Args = append(os.Args, "-xml")
-	os.Args = append(os.Args, fmt.Sprintf("-output=%s", outputPath))
+	os.Args = append(os.Args, "-d=./testDir")
+	os.Args = append(os.Args, "-X")
+	os.Args = append(os.Args, fmt.Sprintf("-o=%s", outputPath))
 	main()
 	os.Args = os.Args[:len(os.Args)-3]
 
@@ -103,9 +113,9 @@ func TestXML(t *testing.T) {
 func TestJSON(t *testing.T) {
 	outputPath := "./testResult/test_json_output.json"
 
-	os.Args = append(os.Args, "-dir=./testDir")
-	os.Args = append(os.Args, "-json")
-	os.Args = append(os.Args, fmt.Sprintf("-output=%s", outputPath))
+	os.Args = append(os.Args, "-d=./testDir")
+	os.Args = append(os.Args, "-J")
+	os.Args = append(os.Args, fmt.Sprintf("-o=%s", outputPath))
 	main()
 	os.Args = os.Args[:len(os.Args)-3]
 
@@ -127,8 +137,8 @@ func TestJSON(t *testing.T) {
 func TestText(t *testing.T) {
 	outputPath := "./testResult/test_text_output.txt"
 
-	os.Args = append(os.Args, "-dir=./testDir")
-	os.Args = append(os.Args, fmt.Sprintf("-output=%s", outputPath))
+	os.Args = append(os.Args, "-d=./testDir")
+	os.Args = append(os.Args, fmt.Sprintf("-o=%s", outputPath))
 	main()
 	os.Args = os.Args[:len(os.Args)-2]
 
@@ -152,7 +162,7 @@ func TestStdout(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	os.Args = append(os.Args, "-dir=./testDir")
+	os.Args = append(os.Args, "-d=./testDir")
 	main()
 	os.Args = os.Args[:len(os.Args)-1]
 

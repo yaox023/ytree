@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/akamensky/argparse"
 )
 
 type ItemType string
@@ -144,12 +145,16 @@ func writeFile(data []byte, filePath string) error {
 }
 
 func main() {
-	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	dir := flags.String("dir", "./testDir", "directory to show")
-	toJSON := flags.Bool("json", false, "output to a json file")
-	toXML := flags.Bool("xml", false, "output to a xml file")
-	outputPath := flags.String("output", "", "output path")
-	flags.Parse(os.Args[2:])
+	parser := argparse.NewParser("ytree", "list contents of directories in a tree-like format")
+	dir := parser.String("d", "dir", &argparse.Options{Default: ".", Help: "directory to list"})
+	toJSON := parser.Flag("J", "json", &argparse.Options{Help: "Turn on JSON output. Outputs the directory tree as an JSON formatted array."})
+	toXML := parser.Flag("X", "xml", &argparse.Options{Help: "Turn on XML output. Outputs the directory tree as an XML formatted file."})
+	outputPath := parser.String("o", "filename", &argparse.Options{Help: "Send output to filename."})
+
+	err := parser.Parse(os.Args)
+	if err != nil {
+		log.Fatal(parser.Usage(err))
+	}
 
 	dirInfo, err := os.Stat(*dir)
 	if err != nil {
@@ -185,7 +190,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		return
 	} else {
 		fmt.Println(string(outputBytes))
 	}
