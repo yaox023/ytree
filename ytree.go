@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -19,12 +20,19 @@ const (
 )
 
 type Item struct {
-	Type     ItemType `json:"type"`
-	Name     string   `json:"name"`
+	XMLName  xml.Name `json:"-"`
+	Type     ItemType `json:"type" xml:"-"`
+	Name     string   `json:"name" xml:"name,attr"`
 	Contents []Item   `json:"contents,omitempty"`
 }
 
-func readItem(itemPath string, item *Item) {
+type Report struct {
+	XMLName     xml.Name `xml:"report"`
+	Directories int      `xml:"directories"`
+	Files       int      `xml:"files"`
+}
+
+func readItem(itemPath string, item *Item, report *Report) {
 	itemInfo, err := os.Stat(itemPath)
 	if err != nil {
 		log.Fatal(err)
@@ -32,6 +40,8 @@ func readItem(itemPath string, item *Item) {
 	if !itemInfo.IsDir() {
 		item.Type = fileItem
 		item.Name = itemInfo.Name()
+		item.XMLName = xml.Name{Local: string(fileItem)}
+		report.Files += 1
 		return
 	}
 	fileInfos, err := ioutil.ReadDir(itemPath)
@@ -40,10 +50,12 @@ func readItem(itemPath string, item *Item) {
 	}
 	item.Type = dirItem
 	item.Name = itemInfo.Name()
+	item.XMLName = xml.Name{Local: string(dirItem)}
 	item.Contents = []Item{}
+	report.Directories += 1
 	for _, fileInfo := range fileInfos {
 		newItem := &Item{}
-		readItem(filepath.Join(itemPath, fileInfo.Name()), newItem)
+		readItem(filepath.Join(itemPath, fileInfo.Name()), newItem, report)
 		item.Contents = append(item.Contents, *newItem)
 	}
 }
@@ -104,9 +116,24 @@ func outputItemToJSON(item *Item, outputPath string) ([]byte, error) {
 	return output, nil
 }
 
-// func outputItemToXML(item *Item, outputPath string) {
-
-// }
+func outputItemToXML(item *Item, report *Report, outputPath string) ([]byte, error) {
+	tree := struct {
+		XMLName xml.Name
+		Item    Item
+		Report  Report
+	}{
+		xml.Name{Local: "tree"},
+		*item,
+		*report,
+	}
+	output, err := xml.MarshalIndent(tree, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	header := `<?xml version="1.0" encoding="UTF-8"?>` + "\n"
+	output = []byte(header + string(output))
+	return output, nil
+}
 
 func writeFile(data []byte, filePath string) error {
 	err := ioutil.WriteFile(filePath, data, 0644)
@@ -124,6 +151,8 @@ func main() {
 	outputPath := flags.String("output", "", "output path")
 	flags.Parse(os.Args[2:])
 
+	// 逻辑是都输出 std，指定文件才输出文件
+
 	dirInfo, err := os.Stat(*dir)
 	if err != nil {
 		log.Fatal(err)
@@ -133,7 +162,9 @@ func main() {
 	}
 
 	item := &Item{}
-	readItem(*dir, item)
+	// -1 for subtrack start dir
+	report := &Report{Files: 0, Directories: -1}
+	readItem(*dir, item, report)
 
 	if *toJSON {
 		jsonBytes, err := outputItemToJSON(item, *outputPath)
@@ -148,7 +179,14 @@ func main() {
 	}
 
 	if *toXML {
-		// outputItemToXML(item, *outputPath)
+		xmlBytes, err := outputItemToXML(item, report, *outputPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = writeFile(xmlBytes, *outputPath)
+		if err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 

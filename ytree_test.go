@@ -53,8 +53,51 @@ const standardJSON = `{
 	]
 }`
 
+const standardXML = `<?xml version="1.0" encoding="UTF-8"?>
+<tree>
+  <directory name="testDir">
+    <directory name="a">
+      <file name="1.txt"></file>
+    </directory>
+    <directory name="b">
+      <file name="2.txt"></file>
+      <directory name="c">
+        <file name="3.txt"></file>
+      </directory>
+    </directory>
+  </directory>
+  <report>
+    <directories>3</directories>
+    <files>3</files>
+  </report>
+</tree>`
+
 func init() {
 	os.MkdirAll("./testResult", 0755)
+}
+
+func TestXML(t *testing.T) {
+	outputPath := "./testResult/test_xml_output.xml"
+
+	os.Args = append(os.Args, "-dir=./testDir")
+	os.Args = append(os.Args, "-xml")
+	os.Args = append(os.Args, fmt.Sprintf("-output=%s", outputPath))
+	main()
+	os.Args = os.Args[:len(os.Args)-3]
+
+	outputBytes, err := ioutil.ReadFile(outputPath)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = os.Remove(outputPath)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(outputBytes) != standardXML {
+		t.Error("result not match")
+	}
 }
 
 func TestJSON(t *testing.T) {
