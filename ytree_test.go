@@ -59,7 +59,6 @@ func init() {
 
 func TestJSON(t *testing.T) {
 	outputPath := "./testResult/test_json_output.json"
-	// templatePath := "./testResult/test_json_template.json"
 
 	os.Args = append(os.Args, "-dir=./testDir")
 	os.Args = append(os.Args, "-json")
@@ -84,7 +83,6 @@ func TestJSON(t *testing.T) {
 
 func TestText(t *testing.T) {
 	outputPath := "./testResult/test_text_output.txt"
-	// templatePath := "./testResult/test_text_template.txt"
 
 	os.Args = append(os.Args, "-dir=./testDir")
 	os.Args = append(os.Args, fmt.Sprintf("-output=%s", outputPath))
