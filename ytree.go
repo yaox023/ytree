@@ -117,11 +117,12 @@ func writeFile(data []byte, filePath string) error {
 }
 
 func main() {
-	dir := flag.String("dir", "./", "directory to show")
-	toJSON := flag.Bool("json", false, "output to a json file")
-	toXML := flag.Bool("xml", false, "output to a xml file")
-	outputPath := flag.String("output", "", "output path")
-	flag.Parse()
+	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	dir := flags.String("dir", "./testDir", "directory to show")
+	toJSON := flags.Bool("json", false, "output to a json file")
+	toXML := flags.Bool("xml", false, "output to a xml file")
+	outputPath := flags.String("output", "", "output path")
+	flags.Parse(os.Args[2:])
 
 	dirInfo, err := os.Stat(*dir)
 	if err != nil {
